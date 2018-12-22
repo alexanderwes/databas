@@ -4,6 +4,8 @@ import booksdbclient.model.Author;
 import booksdbclient.model.Book;
 import booksdbclient.model.BooksDbInterface;
 import booksdbclient.model.Genre;
+import javafx.scene.control.Alert.AlertType;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -11,8 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.scene.control.Alert;
-
 import static javafx.scene.control.Alert.AlertType.*;
 
 /**
@@ -46,7 +46,7 @@ public class Controller {
                         result = booksDb.searchBooksByAuthor(searchFor);
                         break;
                     case Genre:
-                        result = booksDb.searchBooksByGenre(Genre.valueOf(searchFor));
+                        result = booksDb.searchBooksByGenre(Genre.valueOf(searchFor.toUpperCase()));
                         break;
                     case Rating:
                         result = booksDb.searchBooksByRating(searchFor);
@@ -70,6 +70,7 @@ public class Controller {
     protected void connectToDb() {
         try {
             booksDb.connect("library");
+            booksView.showAlertAndWait("Connected", AlertType.INFORMATION);
         } catch (IOException | SQLException ex) {
             Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -78,9 +79,19 @@ public class Controller {
     protected void disconnectFromDb() {
         try {
             booksDb.disconnect();
+            booksView.showAlertAndWait("Disconnected", AlertType.INFORMATION);
         } catch (IOException | SQLException ex) {
             Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    protected void printAllBooks() {
+    	try {
+			booksView.displayBooks(booksDb.getBooks());
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
     protected void addbook(String title, String name, String isbn, Genre genre, int rating) {
@@ -90,6 +101,7 @@ public class Controller {
             book.addAuthor(new Author(name, LocalDate.now()));
             try {
                 booksDb.insertBook(book);
+                
                 booksView.showAlertAndWait("Book has been added", INFORMATION);
             } catch (SQLException ex) {
                 Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
@@ -113,11 +125,31 @@ public class Controller {
     }
 
     protected void addAuthor(String isbn, String name) {
-        List<Author> authors = new ArrayList<>();
-        authors.add(new Author(name, LocalDate.now()));
+    	Author author = null;
+    	author = new Author(name, LocalDate.now());
+        try {
+			booksDb.addAuthor(isbn, author);
+		} catch (SQLException e) {
+			booksView.showAlertAndWait("No book with this isbn", ERROR);
+		}
+        
     }
 
     protected void updateRating(String isbn, int rating) {
-
+    	
+    	try {
+			if (booksDb.updateRating(isbn, rating)) {
+				booksView.showAlertAndWait("Rating has been successfully updated", AlertType.INFORMATION);
+			}
+			else 
+				booksView.showAlertAndWait("Book not found", AlertType.ERROR);
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+   
+    	
     }
 }

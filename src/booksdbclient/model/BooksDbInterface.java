@@ -85,7 +85,7 @@ public interface BooksDbInterface {
      * @return true if successful
      * @throws SQLException
      */
-    public boolean updateRating(Book book, int rating) throws SQLException;
+    public boolean updateRating(String isbn, int rating) throws SQLException;
     /**
      * Updating an existing book's authors
      * @param book
@@ -93,7 +93,7 @@ public interface BooksDbInterface {
      * @return true if successful
      * @throws SQLException
      */
-    public boolean addAuthors(Book book, List<Author> authors) throws SQLException;
+    public boolean addAuthor(String isbn, Author author) throws SQLException;
     /**
      * Deletes an existing book from database
      * @param ISBN

@@ -78,24 +78,19 @@ public class MockBooksDb implements BooksDbInterface {
 	    	searchByTitle.setString(1, s);
 	    	resultSet=searchByTitle.executeQuery();
 	    	list = copyBooksToList(resultSet);
-	    	list = fixList(list);
+	
 	    	return list;
     	}
     	
     	finally {
     		resultSet.close();
     	}
-
     }
 
 	@Override
 	public List<Book> searchBooksByAuthor(String name) throws SQLException  {
 		PreparedStatement searchByAuthor;
 		List<Book> list = new ArrayList<>();
-		Author author;
-		List<Author> authors;
-		Genre genre;
-		
 		
 		String s = "%" + name + "%";
 		String sql = 
@@ -112,7 +107,6 @@ public class MockBooksDb implements BooksDbInterface {
 		finally {
 			resultSet.close();
 		}
-		
 	}
 
 	@Override
@@ -132,7 +126,7 @@ public class MockBooksDb implements BooksDbInterface {
 			searchByISBN.setString(1, isbn_);
 			resultSet = searchByISBN.executeQuery();
 			list = copyBooksToList(resultSet);
-			list = fixList(list);
+	
 		}
 		finally {
 			resultSet.close();
@@ -156,7 +150,7 @@ public class MockBooksDb implements BooksDbInterface {
 			resultSet = searchByRating.executeQuery();
 			
 			list = copyBooksToList(resultSet);
-			list = fixList(list);
+		
 		}
 		finally {
 			resultSet.close();
@@ -195,10 +189,11 @@ public class MockBooksDb implements BooksDbInterface {
 		List<Author> authors_ = new ArrayList<>();
 		
 		String sqlInsertBook = "insert into t_book values (?, ?, ?, ?)";
-		String sqlInsertAuthor = "insert into t_author values (?, ?, ?)";
+		String sqlInsertAuthor = "insert into t_author values (?, ?)";
 		String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
 		
 		Author author;
+		
 		for (int i=0; i<book.getAuthors().size(); i++) {
 			author = new Author(book.getAuthors().get(i).getName(), book.getAuthors().get(i).getDob());
 			authors_.add(author);
@@ -206,7 +201,6 @@ public class MockBooksDb implements BooksDbInterface {
 		
 		try {
 			connection.setAutoCommit(false);
-			
 			insertBook = connection.prepareStatement(sqlInsertBook);
 			insertBook.setString(1, book.getIsbn());
 			insertBook.setString(2, book.getTitle());
@@ -214,12 +208,10 @@ public class MockBooksDb implements BooksDbInterface {
 			insertBook.setInt(4, book.getRating());
 			insertBook.executeUpdate();
 			
-			
 			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
 			for (int i=0; i<authors_.size(); i++) {
 				insertAuthor.setString(1, authors_.get(i).getName());
 				insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
-				insertAuthor.setInt(3, authors_.get(i).getIsbn().size());
 				insertAuthor.executeUpdate();
 			}
 			
@@ -248,81 +240,62 @@ public class MockBooksDb implements BooksDbInterface {
 	}
 
 	@Override
-	public boolean updateRating(Book book, int rating) throws SQLException {
+	public boolean updateRating(String isbn, int rating) throws SQLException {
 		PreparedStatement updateRating = null;
-	
+		
 		String sqlUpdateRating = "update t_book "
 								+ "set rating = ? "
 								+ "where isbn = ? ";
-		
-		String isbn = book.getIsbn();
-		
 		try {
 			updateRating = connection.prepareStatement(sqlUpdateRating);
 			updateRating.setInt(1, rating);
 			updateRating.setString(2, isbn);
-			updateRating.executeUpdate();
-			System.out.println("updated");
-			return true;
+			if (updateRating.executeUpdate()==0)
+				return false;
+			else 	
+				return true;
 		}
 		
 		finally {
 			
 		}
-//		return false;
 	}
 
 	@Override
-	public boolean addAuthors(Book book, List<Author> authors) throws SQLException {
+	public boolean addAuthor(String isbn, Author author) throws SQLException {
 		
 		PreparedStatement insertAuthor = null;
-		PreparedStatement searchForSameAuthor = null;
-		String isbn = book.getIsbn();
-		String sqlInsertAuthor = "insert into t_author values (?,?,?)";
-		String sqlFindAuthor = " select * from t_author where name = ? and dob = ?";
-		Author author;
-		List<Author> authors_ = new ArrayList<>();
-		List<Author> authorsFromDB= new ArrayList<>();
-		//copy to internal list of authors
-		for (int i=0; i<authors.size(); i++) {
-			author = new Author(authors.get(i).getName(), authors.get(i).getDob());
-			authors_.add(author);
-		}
+		PreparedStatement insertWrittenby = null;
 		
-		authorsFromDB = getAuthors();
-		boolean check = false;
-		
-		for (int i=0; i<authors.size(); i++) {
-			for (int j=0; j<authorsFromDB.size(); j++) {
-				if(authors.get(i).getName().equalsIgnoreCase(authorsFromDB.get(j).getName())
-						&& authors.get(i).getDob().isEqual(authorsFromDB.get(j).getDob())) {
-					check=true;
-				
-				}
-			}
-		}
-		searchForSameAuthor = connection.prepareStatement(sqlFindAuthor);
-		for (int i=0; i<authors.size(); i++) {
-			searchForSameAuthor.setString(1, authors.get(i).getName());
-		}
-		
+		String sqlInsertAuthor = "insert into t_author values (?, ?)";
+		String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
+
 		try {
 			connection.setAutoCommit(false);
+			
 			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
-			for (int i=0; i<authors_.size(); i++) {
-				insertAuthor.setString(1, authors_.get(i).getName());
-				insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
-				insertAuthor.setInt(3, 4);
-				insertAuthor.executeUpdate();
+			insertAuthor.setString(1, author.getName());
+			insertAuthor.setDate(2, java.sql.Date.valueOf(author.getDob()));
+			insertAuthor.executeUpdate();
+			
+			insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
+			insertWrittenby.setString(1, isbn);
+			insertWrittenby.setString(2, author.getName());
+			insertWrittenby.setDate(3, java.sql.Date.valueOf(author.getDob()));
+			if (insertWrittenby.executeUpdate()==0) {
+				return false;
 			}
-			
-			
-			
-			connection.commit();
-			return true;
+
+			else {
+				connection.commit();
+				return true;
+			}
 		}
+				
 		finally {
+
 			insertAuthor.close();
+			insertWrittenby.close();
 		}
 	}
 
@@ -372,48 +345,20 @@ public class MockBooksDb implements BooksDbInterface {
 	@Override
 	public List<Book> getBooks() throws SQLException {		
 		List<Book> list = new ArrayList<>();
-		List<Author> authors = new ArrayList<>();
+
 		resultSet = statement.executeQuery(" select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob"
 				+ " from t_writtenby, t_author, t_book "
-				+ " where t_writtenby.name = t_author.name AND t_book.isbn = t_writtenby.isbn");
+				+ " where t_writtenby.name = t_author.name AND t_writtenby.dob = t_author.dob AND t_book.isbn = t_writtenby.isbn");
 		
 		list = copyBooksToList(resultSet);
-		list = fixList(list);
-		authors = getAuthorsBooks(list);
-		
+	
 		return list;
-		
 	}	
-	
-	/**
-	 * Process data from database, places book-data in list of books
-	 * @param resultSet - data retrieved by query statement from the database
-	 * @return list of books
-	 * @throws SQLException
-	 */
-	
-	public List<Author> getAuthorsBooks (List<Book> book) {
-		
-		ArrayList<Author> authors = new ArrayList<>();
-		
-		
-		for (int i=0; i<book.size(); i++) {
-			for (int j=0; j<book.get(i).getAuthors().size(); j++) {
-				if(book.get(i).getAuthors().get(j).getName().equals(book.get(i).getAuthors().get(j).getName()) ) {
-					
-				}
-			}
-		}
-		
-		return authors;
-	}
 	
 	private List<Book> copyBooksToList(ResultSet resultSet) throws SQLException {
 		Author author;
 		Book book;
-		ArrayList<Author> authorList = new ArrayList<>();
 		List<Book> list = new ArrayList<>();
-		List<Book> list2 = new ArrayList<>();
 		
 		try {
 			while (resultSet.next()) {
@@ -423,26 +368,9 @@ public class MockBooksDb implements BooksDbInterface {
 						genre, resultSet.getInt(4));
 				book.addAuthor(author);
 				
-				
-				for (int i=0; i<list.size(); i++) {
-					for (int j=0; j<list.get(i).getAuthors().size(); j++)
-					if (author.getName().equalsIgnoreCase(list.get(i).getAuthors().get(j).getName())) {
-						author.addIsbn(list.get(i).getIsbn());
-					}
-				}
- 				
 				author.addIsbn(book.getIsbn());
-				list.add(book);				
+				list.add(book);
 			}
-			
-//			for (int i=0; i<list.size(); i++) {
-//				for (int j=0; j<list.get(i).getAuthors().size(); j++) {
-//					if (list.get(i).getAuthors().get(j).getName().equalsIgnoreCase(list.get(j+1).getAuthors().get(j).getName())) {
-//						list.get(j+1).getAuthors().get(j).addIsbn(list.get(i).getIsbn());
-//					}
-//				}
-//			}
-			
 			return list;
 		}
 		finally {
@@ -461,19 +389,17 @@ public class MockBooksDb implements BooksDbInterface {
 		}
 		return list;
 	}
-	/**
-	 * Formats list of books
-	 * @param books
-	 * @return the formatted list
-	 */
+	
 	private List<Book> fixList(List<Book> books) {
-
-		for (int i=0; i<books.size()-1; i++) {
-			if(books.get(i).getIsbn().equalsIgnoreCase(books.get(i+1).getIsbn())) {
-				books.get(i).addAuthor(books.get(i+1).getAuthors().get(0));
-				books.remove(i+1);
+		
+		List<Book> list = new ArrayList<>();
+		
+		for (int i=0; i<books.size(); i++) {
+			if (list.get(i).getIsbn() != books.get(i).getIsbn()) {
+				
 			}
-		}	
-		return books;
+		}
+		
+		return list;
 	}
 }

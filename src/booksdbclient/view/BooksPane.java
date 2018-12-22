@@ -47,7 +47,7 @@ public class BooksPane extends VBox {
     private ComboBox<SearchMode> searchModeBox;
     private TextField searchField;
     private Button searchButton;
-
+    private Button printAllBooks;
     private MenuBar menuBar;
 
     public BooksPane(MockBooksDb booksDb) {
@@ -90,7 +90,7 @@ public class BooksPane extends VBox {
         FlowPane bottomPane = new FlowPane();
         bottomPane.setHgap(10);
         bottomPane.setPadding(new Insets(10, 10, 10, 10));
-        bottomPane.getChildren().addAll(searchModeBox, searchField, searchButton);
+        bottomPane.getChildren().addAll(searchModeBox, searchField, searchButton, printAllBooks);
 
         BorderPane mainPane = new BorderPane();
         mainPane.setCenter(booksTable);
@@ -121,7 +121,7 @@ public class BooksPane extends VBox {
         authors.setCellValueFactory(new PropertyValueFactory<>("authors"));
         genre.setCellValueFactory(new PropertyValueFactory<>("Genre"));
         rating.setCellValueFactory(new PropertyValueFactory<>("Rating"));
-        isbn.setCellValueFactory(new PropertyValueFactory<>("ISBN"));
+        isbn.setCellValueFactory(new PropertyValueFactory<>("isbn"));
 
         // associate the table view with the data
         booksTable.setItems(booksInTable);
@@ -134,12 +134,17 @@ public class BooksPane extends VBox {
         searchModeBox.getItems().addAll(SearchMode.values());
         searchModeBox.setValue(SearchMode.Title);
         searchButton = new Button("Search");
+        printAllBooks = new Button("Print all books");
 
         // event handling (dispatch to controller)
         searchButton.setOnAction((ActionEvent event) -> {
             String searchFor = searchField.getText();
             SearchMode mode = searchModeBox.getValue();
             controller.onSearchSelected(searchFor, mode);
+        });
+        
+        printAllBooks.setOnAction(e -> {
+        	controller.printAllBooks();
         });
     }
 
@@ -149,7 +154,7 @@ public class BooksPane extends VBox {
         MenuItem exitItem = new MenuItem("Exit");
         MenuItem connectItem = new MenuItem("Connect to Db");
         MenuItem disconnectItem = new MenuItem("Disconnect");
-        fileMenu.getItems().addAll(exitItem, connectItem, disconnectItem);
+        fileMenu.getItems().addAll(connectItem, disconnectItem, exitItem);
 
         Menu manageMenu = new Menu("Manage");
         MenuItem addItem = new MenuItem("Add book");
@@ -265,6 +270,34 @@ public class BooksPane extends VBox {
 
             dialog.getDialogPane().lookupButton(submit).addEventHandler(ActionEvent.ACTION, event -> {
                 controller.addAuthor(isbn.getText(), author.getText());
+            });
+            dialog.showAndWait();
+        });
+        
+        updateItem.setOnAction(e -> {
+        	GridPane grid = new GridPane();
+        	TextField isbn = new TextField();
+        	
+            grid.add(new Label("ISBN"), 0, 1);
+            grid.add(isbn, 1, 1);
+            
+            ObservableList<Integer> choiceRating = FXCollections.observableArrayList();
+            choiceRating.addAll(1, 2, 3, 4, 5);
+            ComboBox<Integer> rating = new ComboBox<Integer>(choiceRating);
+            rating.getSelectionModel().selectFirst();
+            grid.add(new Label("Rating "), 0, 2);
+            grid.add(rating, 1, 2);
+            
+            Dialog<Book> dialog = new Dialog<>();
+            ButtonType submit = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            
+            dialog.setTitle("Update rating");
+            dialog.getDialogPane().setContent(grid);
+            dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
+            
+            dialog.getDialogPane().lookupButton(submit).addEventHandler(ActionEvent.ACTION, event -> {
+            	controller.updateRating(isbn.getText(), rating.getValue());
             });
             dialog.showAndWait();
         });
