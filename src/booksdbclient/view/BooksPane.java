@@ -1,22 +1,21 @@
 package booksdbclient.view;
 
-import booksdbclient.model.SearchMode;
+import booksdbclient.model.Author;
 import booksdbclient.model.Book;
 import booksdbclient.model.Genre;
 import booksdbclient.model.MockBooksDb;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
-
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
@@ -27,15 +26,12 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 
 /**
  * The main pane for the view, extending VBox and including the menus. An
@@ -51,9 +47,7 @@ public class BooksPane extends VBox {
     private ComboBox<SearchMode> searchModeBox;
     private TextField searchField;
     private Button searchButton;
-    
-    
-    
+
     private MenuBar menuBar;
 
     public BooksPane(MockBooksDb booksDb) {
@@ -71,10 +65,10 @@ public class BooksPane extends VBox {
         booksInTable.clear();
         booksInTable.addAll(books);
     }
-    
+
     /**
      * Notify user on input error or exceptions.
-     * 
+     *
      * @param msg the message
      * @param type types: INFORMATION, WARNING et c.
      */
@@ -109,25 +103,26 @@ public class BooksPane extends VBox {
 
     private void initBooksTable() {
         booksTable = new TableView<>();
-        booksTable.setEditable(false); // don't allow user updates (yet)
+        booksTable.setStyle("-fx-focus-color: transparent;");
 
-        // define columns
-        TableColumn<Book, String> genreCol = new TableColumn<>("Genre");
-        TableColumn<Book, String> titleCol = new TableColumn<>("Title");
-        TableColumn<Book, String> isbnCol = new TableColumn<>("ISBN");
-        TableColumn<Book, Integer> ratingCol = new TableColumn<>("Rating");
-        booksTable.getColumns().addAll(titleCol, isbnCol, genreCol, ratingCol);
-        // give title column some extra space
-        titleCol.prefWidthProperty().bind(booksTable.widthProperty().multiply(0.5));
+        TableColumn<Book, String> isbn = new TableColumn<>("ISBN");
+        TableColumn<Book, String> title = new TableColumn<>("Title");
+        TableColumn<Book, String> genre = new TableColumn<>("Genre");
+        TableColumn<Book, Integer> rating = new TableColumn<>("Rating");
+        TableColumn<Book, Author> authors = new TableColumn<>("Authors");
 
-        // define how to fill data for each cell, 
-        // get values from Book properties
-        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
-        isbnCol.setCellValueFactory(new PropertyValueFactory<>("isbn"));
-        genreCol.setCellValueFactory(new PropertyValueFactory<>("genre"));
-        ratingCol.setCellValueFactory(new PropertyValueFactory<>("rating"));
-       // publishedCol.setCellValueFactory(new PropertyValueFactory<>("published"));
-        
+        booksTable.getColumns().addAll(title, authors, genre, isbn, rating);
+
+        title.prefWidthProperty().bind(booksTable.widthProperty().multiply(0.30));
+        authors.prefWidthProperty().bind(booksTable.widthProperty().multiply(0.30));
+        isbn.prefWidthProperty().bind(booksTable.widthProperty().multiply(0.20));
+
+        title.setCellValueFactory(new PropertyValueFactory<>("Title"));
+        authors.setCellValueFactory(new PropertyValueFactory<>("authors"));
+        genre.setCellValueFactory(new PropertyValueFactory<>("Genre"));
+        rating.setCellValueFactory(new PropertyValueFactory<>("Rating"));
+        isbn.setCellValueFactory(new PropertyValueFactory<>("ISBN"));
+
         // associate the table view with the data
         booksTable.setItems(booksInTable);
     }
@@ -139,15 +134,12 @@ public class BooksPane extends VBox {
         searchModeBox.getItems().addAll(SearchMode.values());
         searchModeBox.setValue(SearchMode.Title);
         searchButton = new Button("Search");
-        
+
         // event handling (dispatch to controller)
-        searchButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                String searchFor = searchField.getText();
-                SearchMode mode = searchModeBox.getValue();
-                controller.onSearchSelected(searchFor, mode);
-            }
+        searchButton.setOnAction((ActionEvent event) -> {
+            String searchFor = searchField.getText();
+            SearchMode mode = searchModeBox.getValue();
+            controller.onSearchSelected(searchFor, mode);
         });
     }
 
@@ -155,88 +147,126 @@ public class BooksPane extends VBox {
 
         Menu fileMenu = new Menu("File");
         MenuItem exitItem = new MenuItem("Exit");
-        exitItem.setOnAction(e -> {
-        	controller.disconnectFromDb();
-        	Platform.exit();
-        });
-        
         MenuItem connectItem = new MenuItem("Connect to Db");
-        connectItem.setOnAction(e -> 
-        controller.connectToDB());
         MenuItem disconnectItem = new MenuItem("Disconnect");
-        disconnectItem.setOnAction(e -> controller.disconnectFromDb());
         fileMenu.getItems().addAll(exitItem, connectItem, disconnectItem);
 
-//        Menu searchMenu = new Menu("Search");
-//        
-//        MenuItem titleItem = new MenuItem("Title");
-//        MenuItem isbnItem = new MenuItem("ISBN");
-//        MenuItem authorItem = new MenuItem("Author");
-//        searchMenu.getItems().addAll(titleItem, isbnItem, authorItem);
-
-        
-        
         Menu manageMenu = new Menu("Manage");
-        MenuItem addItem = new MenuItem("Add");
-        addItem.setOnAction(e -> {
-        	Stage window = new Stage();
-    		window.initModality(Modality.APPLICATION_MODAL);
-    		window.setTitle("Add book");
-    		
-    		GridPane layout = new GridPane();
-    		layout.setPadding(new Insets(10, 10, 10, 10));
-    		layout.setVgap(10);
-    		layout.setHgap(10);
-    		
-    		Label title = new Label("Title: ");
-    		GridPane.setConstraints(title, 0, 0);
-    		Label isbn = new Label("ISBN: ");
-    		GridPane.setConstraints(isbn, 0, 1);
-    		Label authorName = new Label("Authors name: ");
-    		GridPane.setConstraints(authorName, 0, 2);
-    		Label authorDob = new Label("Authors date of birth: ");
-    		GridPane.setConstraints(authorDob, 0, 3);
-    		Label genre = new Label("Genre: ");
-    		GridPane.setConstraints(genre, 0, 4);
-    		Label rating = new Label("Rating: ");
-    		GridPane.setConstraints(rating, 0, 5);
-    		
-    		TextField titleF = new TextField();
-    		GridPane.setConstraints(titleF, 1, 0);
-    		TextField isbnF = new TextField();
-    		GridPane.setConstraints(isbnF, 1, 1);
-    		TextField authorNameF = new TextField();
-    		GridPane.setConstraints(authorNameF, 1, 2);
-    		TextField authorDobF = new TextField();
-    		GridPane.setConstraints(authorDobF, 1, 3);
-    		ComboBox genreF = new ComboBox();
-    		genreF.getItems().addAll(Genre.values());
-    		GridPane.setConstraints(genreF, 1, 4);
-    		TextField ratingF = new TextField();
-    		GridPane.setConstraints(ratingF, 1, 5);
-    		
-    		Button submit = new Button("Submit");
-    		GridPane.setConstraints(submit, 1, 8);
-    		
-    		layout.getChildren().addAll(title, isbn, genre, authorName, authorDob, rating, titleF, isbnF, authorNameF, authorDobF, genreF, ratingF, submit);
-    		
-    		Scene scene = new Scene(layout, 300, 350);
-    		
-    		window.setScene(scene);
-    		window.showAndWait();
-        });
-        MenuItem removeItem = new MenuItem("Remove");
-        MenuItem updateItem = new MenuItem("Update");
-        updateItem.setOnAction(e -> {
-        	TextInputDialog dialog = new TextInputDialog();
-        	dialog.setTitle("Update rating");
-        	dialog.setContentText("Enter the rating");
-        });
-        manageMenu.getItems().addAll(addItem, removeItem, updateItem);
+        MenuItem addItem = new MenuItem("Add book");
+        MenuItem removeItem = new MenuItem("Remove book");
+        MenuItem authorItem = new MenuItem("Add author");
+        MenuItem updateItem = new MenuItem("Update rating");
+        manageMenu.getItems().addAll(addItem, removeItem, authorItem, updateItem);
 
         menuBar = new MenuBar();
-        menuBar.getMenus().addAll(fileMenu, /*searchMenu,*/ manageMenu);
+        menuBar.getMenus().addAll(fileMenu, manageMenu);
+
+        exitItem.setOnAction(e -> {
+            controller.disconnectFromDb();
+            Platform.exit();
+        });
+
+        connectItem.setOnAction(e -> {
+            controller.connectToDb();
+        });
+
+        disconnectItem.setOnAction(e -> {
+            controller.disconnectFromDb();
+        });
+
+        addItem.setOnAction(e -> {
+            GridPane grid = new GridPane();
+            grid.setHgap(10);
+            grid.setVgap(10);
+
+            TextField title = new TextField();
+            grid.add(new Label("Title"), 0, 0);
+            grid.add(title, 1, 0);
+
+            TextField isbn = new TextField();
+            grid.add(new Label("ISBN"), 0, 1);
+            grid.add(isbn, 1, 1);
+
+            TextField author = new TextField();
+            grid.add(new Label("Author"), 0, 2);
+            grid.add(author, 1, 2);
+
+            Button OK = new Button();
+            grid.add(OK, 1, 4);
+
+            ObservableList<Genre> choicesGenre = FXCollections.observableArrayList();
+            choicesGenre.addAll(Genre.FANTASY, Genre.DRAMA, Genre.HORROR, Genre.ROMANCE, Genre.SCIENCE);
+            ComboBox<Genre> genre = new ComboBox<Genre>(choicesGenre);
+            genre.getSelectionModel().selectFirst();
+            grid.add(new Label("Genre"), 0, 4);
+            grid.add(genre, 1, 4);
+
+            ObservableList<Integer> choiceRating = FXCollections.observableArrayList();
+            choiceRating.addAll(1, 2, 3, 4, 5);
+            ComboBox<Integer> rating = new ComboBox<Integer>(choiceRating);
+            rating.getSelectionModel().selectFirst();
+            grid.add(new Label("Rating"), 0, 3);
+            grid.add(rating, 1, 3);
+
+            ButtonType submit = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            Dialog<Book> dialog = new Dialog<Book>();
+
+            dialog.setTitle("Add a book");
+            dialog.getDialogPane().setContent(grid);
+
+            dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
+            dialog.getDialogPane().lookupButton(submit).addEventFilter(
+                    ActionEvent.ACTION, event -> {
+                        controller.addbook(title.getText(), author.getText(), isbn.getText(), genre.getValue(), rating.getValue());
+                    });
+            dialog.showAndWait();
+        });
+
+        removeItem.setOnAction(e -> {
+            GridPane grid = new GridPane();
+            TextField isbn = new TextField();
+            grid.add(new Label("ISBN"), 0, 1);
+            grid.add(isbn, 1, 1);
+
+            Dialog<Book> dialog = new Dialog<>();
+            ButtonType remove = new ButtonType("Remove", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            dialog.setTitle("Remove a book");
+            dialog.getDialogPane().setContent(grid);
+            dialog.getDialogPane().getButtonTypes().addAll(remove, cancel);
+            dialog.getDialogPane().lookupButton(remove).addEventHandler(
+                    ActionEvent.ACTION, event -> {
+                        controller.removeBook(isbn.getText());
+                    });
+            isbn.requestFocus();
+            dialog.showAndWait();
+        });
+
+        authorItem.setOnAction(e -> {
+            GridPane grid = new GridPane();
+            TextField isbn = new TextField();
+            TextField author = new TextField();
+
+            grid.add(new Label("ISBN"), 0, 1);
+            grid.add(isbn, 1, 1);
+
+            grid.add(new Label("Author"), 0, 2);
+            grid.add(author, 1, 2);
+
+            Dialog<Book> dialog = new Dialog<>();
+            ButtonType submit = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            dialog.setTitle("Add an author to a book");
+            dialog.getDialogPane().setContent(grid);
+            dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
+
+            dialog.getDialogPane().lookupButton(submit).addEventHandler(ActionEvent.ACTION, event -> {
+                controller.addAuthor(isbn.getText(), author.getText());
+            });
+            dialog.showAndWait();
+        });
     }
-    
-    
 }
