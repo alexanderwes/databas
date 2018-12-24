@@ -195,7 +195,21 @@ public class BooksPane extends VBox {
             TextField author = new TextField();
             grid.add(new Label("Author"), 0, 2);
             grid.add(author, 1, 2);
+            
+            TextField year = new TextField();
+            TextField month = new TextField();
+            TextField day = new TextField();
+            grid.add(new Label("Birth Date \n(yyyy-mm-dd) "), 0, 3);
+            grid.add(year, 1, 3);
+            grid.add(month, 2, 3);
+            grid.add(day, 3, 3);
+           
 
+//            year.setMaxWidth(50);
+            month.setMaxWidth(50);
+            day.setMaxWidth(50);
+            
+            
             Button OK = new Button();
             grid.add(OK, 1, 4);
 
@@ -203,15 +217,15 @@ public class BooksPane extends VBox {
             choicesGenre.addAll(Genre.FANTASY, Genre.DRAMA, Genre.HORROR, Genre.ROMANCE, Genre.SCIENCE);
             ComboBox<Genre> genre = new ComboBox<Genre>(choicesGenre);
             genre.getSelectionModel().selectFirst();
-            grid.add(new Label("Genre"), 0, 4);
-            grid.add(genre, 1, 4);
+            grid.add(new Label("Genre"), 0, 5);
+            grid.add(genre, 1, 5);
 
             ObservableList<Integer> choiceRating = FXCollections.observableArrayList();
             choiceRating.addAll(1, 2, 3, 4, 5);
             ComboBox<Integer> rating = new ComboBox<Integer>(choiceRating);
             rating.getSelectionModel().selectFirst();
-            grid.add(new Label("Rating"), 0, 3);
-            grid.add(rating, 1, 3);
+            grid.add(new Label("Rating"), 0, 4);
+            grid.add(rating, 1, 4);
 
             ButtonType submit = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
             ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -223,7 +237,8 @@ public class BooksPane extends VBox {
             dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
             dialog.getDialogPane().lookupButton(submit).addEventFilter(
                     ActionEvent.ACTION, event -> {
-                        controller.addbook(title.getText(), author.getText(), isbn.getText(), genre.getValue(), rating.getValue());
+                        controller.addbook(title.getText(), author.getText(), Integer.parseInt(year.getText()),
+                        		Integer.parseInt(month.getText()), Integer.parseInt(day.getText()), isbn.getText(), genre.getValue(), rating.getValue());
                     });
             dialog.showAndWait();
         });
@@ -253,13 +268,28 @@ public class BooksPane extends VBox {
             GridPane grid = new GridPane();
             TextField isbn = new TextField();
             TextField author = new TextField();
-
+            TextField year = new TextField();
+            TextField month = new TextField();
+            TextField day = new TextField();
+            
             grid.add(new Label("ISBN"), 0, 1);
             grid.add(isbn, 1, 1);
 
             grid.add(new Label("Author"), 0, 2);
             grid.add(author, 1, 2);
+         
+            grid.add(new Label("Birth Date \n(yyyy-mm-dd) "), 0, 3);
+            grid.add(year, 1, 3);
+            grid.add(month, 2, 3);
+            grid.add(day, 3, 3);
+           
 
+//            year.setMaxWidth(50);
+            month.setMaxWidth(50);
+            day.setMaxWidth(50);
+
+            grid.setPadding(new Insets(10, 10, 10, 10));
+            
             Dialog<Book> dialog = new Dialog<>();
             ButtonType submit = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
             ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -269,7 +299,8 @@ public class BooksPane extends VBox {
             dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
 
             dialog.getDialogPane().lookupButton(submit).addEventHandler(ActionEvent.ACTION, event -> {
-                controller.addAuthor(isbn.getText(), author.getText());
+                controller.addAuthor(isbn.getText(), author.getText(), Integer.parseInt(year.getText()),
+                		Integer.parseInt(month.getText()), Integer.parseInt(day.getText()));
             });
             dialog.showAndWait();
         });

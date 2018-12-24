@@ -94,11 +94,11 @@ public class Controller {
 		}
     }
 
-    protected void addbook(String title, String name, String isbn, Genre genre, int rating) {
+    protected void addbook(String title, String name, int year, int month, int day, String isbn, Genre genre, int rating) {
 
         if (!title.trim().isEmpty() && !isbn.trim().isEmpty() && !name.trim().isEmpty()) {
             Book book = new Book(isbn, title, genre, rating);
-            book.addAuthor(new Author(name, LocalDate.now()));
+            book.addAuthor(new Author(name, LocalDate.of(year, month, day)));
             try {
                 booksDb.insertBook(book);
                 
@@ -124,9 +124,9 @@ public class Controller {
         }
     }
 
-    protected void addAuthor(String isbn, String name) {
+    protected void addAuthor(String isbn, String name, int year, int month, int day) {
     	Author author = null;
-    	author = new Author(name, LocalDate.now());
+    	author = new Author(name, LocalDate.of(year, month, day));
         try {
 			booksDb.addAuthor(isbn, author);
 		} catch (SQLException e) {

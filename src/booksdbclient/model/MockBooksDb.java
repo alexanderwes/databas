@@ -78,7 +78,8 @@ public class MockBooksDb implements BooksDbInterface {
 	    	searchByTitle.setString(1, s);
 	    	resultSet=searchByTitle.executeQuery();
 	    	list = copyBooksToList(resultSet);
-	
+			list = fixList(list);
+			list = fixList2(list);
 	    	return list;
     	}
     	
@@ -102,6 +103,8 @@ public class MockBooksDb implements BooksDbInterface {
 			searchByAuthor.setString(1, s);
 			resultSet = searchByAuthor.executeQuery();	
 			list = copyBooksToList(resultSet);
+			list = fixList(list);
+			list = fixList2(list);
 			return list;
 		} 
 		finally {
@@ -126,7 +129,8 @@ public class MockBooksDb implements BooksDbInterface {
 			searchByISBN.setString(1, isbn_);
 			resultSet = searchByISBN.executeQuery();
 			list = copyBooksToList(resultSet);
-	
+			list = fixList(list);
+			list = fixList2(list);
 		}
 		finally {
 			resultSet.close();
@@ -148,9 +152,9 @@ public class MockBooksDb implements BooksDbInterface {
 			searchByRating = connection.prepareStatement(sql);
 			searchByRating.setString(1, rating);
 			resultSet = searchByRating.executeQuery();
-			
 			list = copyBooksToList(resultSet);
-		
+			list = fixList(list);
+			list = fixList2(list);
 		}
 		finally {
 			resultSet.close();
@@ -173,6 +177,8 @@ public class MockBooksDb implements BooksDbInterface {
 			searchByGenre.setString(1, s);
 			resultSet = searchByGenre.executeQuery();
 			list = copyBooksToList(resultSet);
+			list = fixList(list);
+			list = fixList2(list);
 		} 
 		finally {
 			resultSet.close();
@@ -199,6 +205,20 @@ public class MockBooksDb implements BooksDbInterface {
 			authors_.add(author);
 		}
 		
+		
+		try {
+			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
+			for (int i=0; i<authors_.size(); i++) {
+				insertAuthor.setString(1, authors_.get(i).getName());
+				insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
+				insertAuthor.executeUpdate();
+			}
+		}
+		catch (Exception e){
+			
+		}
+		
+		
 		try {
 			connection.setAutoCommit(false);
 			insertBook = connection.prepareStatement(sqlInsertBook);
@@ -208,12 +228,6 @@ public class MockBooksDb implements BooksDbInterface {
 			insertBook.setInt(4, book.getRating());
 			insertBook.executeUpdate();
 			
-			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
-			for (int i=0; i<authors_.size(); i++) {
-				insertAuthor.setString(1, authors_.get(i).getName());
-				insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
-				insertAuthor.executeUpdate();
-			}
 			
 			insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
 			for (int i=0; i<authors_.size(); i++) {
@@ -270,13 +284,20 @@ public class MockBooksDb implements BooksDbInterface {
 		String sqlInsertAuthor = "insert into t_author values (?, ?)";
 		String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
 
+		
 		try {
-			connection.setAutoCommit(false);
-			
 			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
 			insertAuthor.setString(1, author.getName());
 			insertAuthor.setDate(2, java.sql.Date.valueOf(author.getDob()));
 			insertAuthor.executeUpdate();
+		}
+		
+		catch (Exception e) {
+			
+		}
+		
+		try {
+			connection.setAutoCommit(false);
 			
 			insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
 			insertWrittenby.setString(1, isbn);
@@ -351,7 +372,8 @@ public class MockBooksDb implements BooksDbInterface {
 				+ " where t_writtenby.name = t_author.name AND t_writtenby.dob = t_author.dob AND t_book.isbn = t_writtenby.isbn");
 		
 		list = copyBooksToList(resultSet);
-	
+		list = fixList(list);
+		list = fixList2(list);
 		return list;
 	}	
 	
@@ -367,7 +389,6 @@ public class MockBooksDb implements BooksDbInterface {
 				book = new Book(resultSet.getString(1), resultSet.getString(2),
 						genre, resultSet.getInt(4));
 				book.addAuthor(author);
-				
 				author.addIsbn(book.getIsbn());
 				list.add(book);
 			}
@@ -390,16 +411,55 @@ public class MockBooksDb implements BooksDbInterface {
 		return list;
 	}
 	
+	
+	/**
+	 * Places authors of the same book in a single row, removes extra book
+	 * @param books
+	 * @return
+	 */
 	private List<Book> fixList(List<Book> books) {
-		
-		List<Book> list = new ArrayList<>();
+		for (int i=0; i<books.size(); i++) {
+			for (int j=i; j<books.size()-1; j++) {
+				if (books.get(i).getIsbn().equals(books.get(j+1).getIsbn())) {
+					books.get(i).addAuthor(books.get(j+1).getAuthors().get(0));
+					books.remove(j+1);
+				}
+			}
+		}
+		return books;	
+	}
+	
+	
+	/**
+	 * Konstig funktion som lägger till böcker i författarnas isbn lista
+	 * den gämför författarna, om dem är lika fixar grejer
+	 * @param books
+	 * @return
+	 */
+	private List<Book> fixList2(List<Book> books) {
 		
 		for (int i=0; i<books.size(); i++) {
-			if (list.get(i).getIsbn() != books.get(i).getIsbn()) {
-				
+			for (int j=i; j<books.size()-1; j++) {
+
+				for (int k=0; k<books.get(i).getAuthors().size(); k++) {
+					for (int m=0; m<books.get(j+1).getAuthors().size(); m++) {
+						if (books.get(i).getAuthors().get(k).getName().equals(books.get(j+1).getAuthors().get(m).getName())
+								&& books.get(i).getAuthors().get(k).getDob().equals(books.get(j+1).getAuthors().get(m).getDob())) {
+								books.get(j+1).getAuthors().get(m).addIsbn(books.get(i).getIsbn());
+								books.get(i).getAuthors().get(k).addIsbn(books.get(j+1).getIsbn());
+						}
+					}
+				}
 			}
 		}
 		
-		return list;
+		return books;
 	}
 }
+
+
+
+
+
+
+

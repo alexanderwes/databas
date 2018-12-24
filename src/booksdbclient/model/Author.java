@@ -65,6 +65,6 @@ public class Author {
 
     @Override
     public String toString() {
-        return "Name: " + name + " | Birth date: " + dob + " Books: " + isbn;
+        return "Name: " + name + " | Birth date: " + dob + " | Books: " + isbn;
     }
 }
