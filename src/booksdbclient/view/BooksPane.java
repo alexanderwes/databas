@@ -7,6 +7,9 @@ import booksdbclient.model.MockBooksDb;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+
+import com.mysql.cj.util.StringUtils;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -61,6 +64,10 @@ public class BooksPane extends VBox {
      *
      * @param books the books to display
      */
+    
+    public void clearTable() {
+    	booksInTable.clear();
+    }
     public void displayBooks(List<Book> books) {
         booksInTable.clear();
         booksInTable.addAll(books);
@@ -237,8 +244,9 @@ public class BooksPane extends VBox {
             dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
             dialog.getDialogPane().lookupButton(submit).addEventFilter(
                     ActionEvent.ACTION, event -> {
-                        controller.addbook(title.getText(), author.getText(), Integer.parseInt(year.getText()),
-                        		Integer.parseInt(month.getText()), Integer.parseInt(day.getText()), isbn.getText(), genre.getValue(), rating.getValue());
+                    	
+                        controller.addbook(title.getText(), author.getText(), Integer.parseInt("0" + year.getText()),
+                        		Integer.parseInt("0" + month.getText()), Integer.parseInt("0" + day.getText()), isbn.getText(), genre.getValue(), rating.getValue());
                     });
             dialog.showAndWait();
         });
@@ -299,8 +307,8 @@ public class BooksPane extends VBox {
             dialog.getDialogPane().getButtonTypes().addAll(submit, cancel);
 
             dialog.getDialogPane().lookupButton(submit).addEventHandler(ActionEvent.ACTION, event -> {
-                controller.addAuthor(isbn.getText(), author.getText(), Integer.parseInt(year.getText()),
-                		Integer.parseInt(month.getText()), Integer.parseInt(day.getText()));
+                controller.addAuthor(isbn.getText(), author.getText(), Integer.parseInt("0" + year.getText()),
+                		Integer.parseInt("0" + month.getText()), Integer.parseInt("0" + day.getText()));
             });
             dialog.showAndWait();
         });

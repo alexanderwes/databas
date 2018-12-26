@@ -26,7 +26,7 @@ public interface BooksDbInterface {
      * @throws IOException
      * @throws SQLException
      */
-    public void disconnect() throws IOException, SQLException;
+    public boolean disconnect() throws IOException, SQLException;
     
     /**
      * Search books by title

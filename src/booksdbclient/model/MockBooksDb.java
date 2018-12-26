@@ -51,15 +51,17 @@ public class MockBooksDb implements BooksDbInterface {
     }
 
     @Override
-    public void disconnect() throws IOException, SQLException {
+    public boolean disconnect() throws IOException, SQLException {
 		try {
 			if(connection != null) {
 				connection.close();
+				return true;
 			}
 		}		
 		finally {
 			
 		}
+		return false;
     }
 
     @Override
@@ -67,25 +69,28 @@ public class MockBooksDb implements BooksDbInterface {
 
     	PreparedStatement searchByTitle;
     	List<Book> list = new ArrayList<>();
+
     	String s = "%" +searchTitle + "%";    	
     	String sql = 
     			"select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob "
     					+ "from t_book, t_author, t_writtenby "
     			+ "where title LIKE ? AND t_book.isbn = t_writtenby.isbn "
     					+ "AND t_author.name = t_writtenby.name";
-    	try {
-	    	searchByTitle = connection.prepareStatement(sql);
-	    	searchByTitle.setString(1, s);
-	    	resultSet=searchByTitle.executeQuery();
-	    	list = copyBooksToList(resultSet);
-			list = fixList(list);
-			list = fixList2(list);
-	    	return list;
+    	if (connection != null) {
+	    	try {
+		    	searchByTitle = connection.prepareStatement(sql);
+		    	searchByTitle.setString(1, s);
+		    	resultSet=searchByTitle.executeQuery();
+		    	list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = addAuthorsSearch(list);
+	    	}
+	    	
+	    	finally {
+	    		resultSet.close();
+	    	}
     	}
-    	
-    	finally {
-    		resultSet.close();
-    	}
+    	return list;
     }
 
 	@Override
@@ -98,18 +103,21 @@ public class MockBooksDb implements BooksDbInterface {
 				"select distinct t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob "
 						+ "from t_book, t_author, t_writtenby "
 				+ "where t_author.name LIKE ? AND t_writtenby.isbn = t_book.isbn AND t_author.name = t_writtenby.name";
-		try {
-			searchByAuthor = connection.prepareStatement(sql);
-			searchByAuthor.setString(1, s);
-			resultSet = searchByAuthor.executeQuery();	
-			list = copyBooksToList(resultSet);
-			list = fixList(list);
-			list = fixList2(list);
-			return list;
-		} 
-		finally {
-			resultSet.close();
+		if (connection != null) {
+			try {
+				searchByAuthor = connection.prepareStatement(sql);
+				searchByAuthor.setString(1, s);
+				resultSet = searchByAuthor.executeQuery();	
+				list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = addAuthorsSearch(list);
+				
+			} 
+			finally {
+				resultSet.close();
+			}
 		}
+		return list;
 	}
 
 	@Override
@@ -123,17 +131,19 @@ public class MockBooksDb implements BooksDbInterface {
 		String sql = "select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob "
 				+ " from t_book, t_author, t_writtenby "
 				+ " where t_book.isbn LIKE ? AND t_writtenby.name = t_author.name AND T_book.isbn = t_writtenby.isbn";
-		
-		try {
-			searchByISBN = connection.prepareStatement(sql);
-			searchByISBN.setString(1, isbn_);
-			resultSet = searchByISBN.executeQuery();
-			list = copyBooksToList(resultSet);
-			list = fixList(list);
-			list = fixList2(list);
-		}
-		finally {
-			resultSet.close();
+		if (connection != null) {
+			try {
+				searchByISBN = connection.prepareStatement(sql);
+				searchByISBN.setString(1, isbn_);
+				resultSet = searchByISBN.executeQuery();
+				list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = addAuthorsSearch(list);
+				
+			}
+			finally {
+				resultSet.close();
+			}
 		}
 		return list;
 	
@@ -147,17 +157,19 @@ public class MockBooksDb implements BooksDbInterface {
 		String sql = "select distinct t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob "
 				+ "from t_book, t_author, t_writtenby "
 			    + "where t_book.rating = ? AND t_book.isbn = t_writtenby.isbn AND t_author.name = t_writtenby.name";
-		
-		try {
-			searchByRating = connection.prepareStatement(sql);
-			searchByRating.setString(1, rating);
-			resultSet = searchByRating.executeQuery();
-			list = copyBooksToList(resultSet);
-			list = fixList(list);
-			list = fixList2(list);
-		}
-		finally {
-			resultSet.close();
+		if (connection != null) {
+			try {
+				searchByRating = connection.prepareStatement(sql);
+				searchByRating.setString(1, rating);
+				resultSet = searchByRating.executeQuery();
+				list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = addAuthorsSearch(list);
+				
+			}
+			finally {
+				resultSet.close();
+			}
 		}
 		return list;
 	}
@@ -171,85 +183,87 @@ public class MockBooksDb implements BooksDbInterface {
 		String sql = "select distinct t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob "
 				+ "from t_book, t_author, t_writtenby "
 		+ "where t_writtenby.isbn = t_book.isbn AND t_writtenby.name = t_author.name AND t_book.genre = ? ";
-		
-		try {
-			searchByGenre = connection.prepareStatement(sql);
-			searchByGenre.setString(1, s);
-			resultSet = searchByGenre.executeQuery();
-			list = copyBooksToList(resultSet);
-			list = fixList(list);
-			list = fixList2(list);
-		} 
-		finally {
-			resultSet.close();
+		if (connection != null) {
+			try {
+				searchByGenre = connection.prepareStatement(sql);
+				searchByGenre.setString(1, s);
+				resultSet = searchByGenre.executeQuery();
+				list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = addAuthorsSearch(list);
+			} 
+			finally {
+				resultSet.close();
+			}
 		}
 		return list;
 	}
 
 	@Override
 	public void insertBook(Book book) throws SQLException {
-		
-		PreparedStatement insertBook = null;
-		PreparedStatement insertAuthor = null;
-		PreparedStatement insertWrittenby = null;
-		List<Author> authors_ = new ArrayList<>();
-		
-		String sqlInsertBook = "insert into t_book values (?, ?, ?, ?)";
-		String sqlInsertAuthor = "insert into t_author values (?, ?)";
-		String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
-		
-		Author author;
-		
-		for (int i=0; i<book.getAuthors().size(); i++) {
-			author = new Author(book.getAuthors().get(i).getName(), book.getAuthors().get(i).getDob());
-			authors_.add(author);
-		}
-		
-		
-		try {
-			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
-			for (int i=0; i<authors_.size(); i++) {
-				insertAuthor.setString(1, authors_.get(i).getName());
-				insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
-				insertAuthor.executeUpdate();
-			}
-		}
-		catch (Exception e){
+		if (connection != null) {
+			PreparedStatement insertBook = null;
+			PreparedStatement insertAuthor = null;
+			PreparedStatement insertWrittenby = null;
+			List<Author> authors_ = new ArrayList<>();
 			
-		}
-		
-		
-		try {
-			connection.setAutoCommit(false);
-			insertBook = connection.prepareStatement(sqlInsertBook);
-			insertBook.setString(1, book.getIsbn());
-			insertBook.setString(2, book.getTitle());
-			insertBook.setString(3, book.getGenre().getValue());
-			insertBook.setInt(4, book.getRating());
-			insertBook.executeUpdate();
+			String sqlInsertBook = "insert into t_book values (?, ?, ?, ?)";
+			String sqlInsertAuthor = "insert into t_author values (?, ?)";
+			String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
 			
+			Author author;
 			
-			insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
-			for (int i=0; i<authors_.size(); i++) {
-				insertWrittenby.setString(1, book.getIsbn());
-				insertWrittenby.setString(2, book.getAuthors().get(i).getName());
-				insertWrittenby.setDate(3, java.sql.Date.valueOf(book.getAuthors().get(i).getDob()));
-				insertWrittenby.executeUpdate();
+			for (int i=0; i<book.getAuthors().size(); i++) {
+				author = new Author(book.getAuthors().get(i).getName(), book.getAuthors().get(i).getDob());
+				authors_.add(author);
 			}
 			
-			connection.commit();
-		}
-		
-		catch (Exception e){
-			if (connection != null)
-				connection.rollback();
-		}
-		
-		finally {
-			if (insertBook != null) {
+			
+			try {
+				insertAuthor = connection.prepareStatement(sqlInsertAuthor);
+				for (int i=0; i<authors_.size(); i++) {
+					insertAuthor.setString(1, authors_.get(i).getName());
+					insertAuthor.setDate(2, java.sql.Date.valueOf(authors_.get(i).getDob()));
+					insertAuthor.executeUpdate();
+				}
+			}
+			catch (Exception e){
 				
 			}
-			connection.setAutoCommit(true);
+			
+			
+			try {
+				connection.setAutoCommit(false);
+				insertBook = connection.prepareStatement(sqlInsertBook);
+				insertBook.setString(1, book.getIsbn());
+				insertBook.setString(2, book.getTitle());
+				insertBook.setString(3, book.getGenre().getValue());
+				insertBook.setInt(4, book.getRating());
+				insertBook.executeUpdate();
+				
+				
+				insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
+				for (int i=0; i<authors_.size(); i++) {
+					insertWrittenby.setString(1, book.getIsbn());
+					insertWrittenby.setString(2, book.getAuthors().get(i).getName());
+					insertWrittenby.setDate(3, java.sql.Date.valueOf(book.getAuthors().get(i).getDob()));
+					insertWrittenby.executeUpdate();
+				}
+				
+				connection.commit();
+			}
+			
+			catch (Exception e){
+				if (connection != null)
+					connection.rollback();
+			}
+			
+			finally {
+				if (insertBook != null) {
+					
+				}
+				connection.setAutoCommit(true);
+			}
 		}
 	}
 
@@ -260,19 +274,23 @@ public class MockBooksDb implements BooksDbInterface {
 		String sqlUpdateRating = "update t_book "
 								+ "set rating = ? "
 								+ "where isbn = ? ";
-		try {
-			updateRating = connection.prepareStatement(sqlUpdateRating);
-			updateRating.setInt(1, rating);
-			updateRating.setString(2, isbn);
-			if (updateRating.executeUpdate()==0)
-				return false;
-			else 	
-				return true;
-		}
 		
-		finally {
+		if (connection != null) {
+			try {
+				updateRating = connection.prepareStatement(sqlUpdateRating);
+				updateRating.setInt(1, rating);
+				updateRating.setString(2, isbn);
+				if (updateRating.executeUpdate()==0)
+					return false;
+				else 	
+					return true;
+			}
 			
-		}
+			finally {
+				
+			}
+			
+		} else return false;
 	}
 
 	@Override
@@ -284,40 +302,42 @@ public class MockBooksDb implements BooksDbInterface {
 		String sqlInsertAuthor = "insert into t_author values (?, ?)";
 		String sqlInsertWrittenby = "insert into t_writtenby values (?, ?, ?)";
 
-		
-		try {
-			insertAuthor = connection.prepareStatement(sqlInsertAuthor);
-			insertAuthor.setString(1, author.getName());
-			insertAuthor.setDate(2, java.sql.Date.valueOf(author.getDob()));
-			insertAuthor.executeUpdate();
-		}
-		
-		catch (Exception e) {
-			
-		}
-		
-		try {
-			connection.setAutoCommit(false);
-			
-			insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
-			insertWrittenby.setString(1, isbn);
-			insertWrittenby.setString(2, author.getName());
-			insertWrittenby.setDate(3, java.sql.Date.valueOf(author.getDob()));
-			if (insertWrittenby.executeUpdate()==0) {
-				return false;
+		if (connection != null) {
+			try {
+				insertAuthor = connection.prepareStatement(sqlInsertAuthor);
+				insertAuthor.setString(1, author.getName());
+				insertAuthor.setDate(2, java.sql.Date.valueOf(author.getDob()));
+				insertAuthor.executeUpdate();
 			}
-
-			else {
-				connection.commit();
-				return true;
-			}
-		}
+			
+			catch (Exception e) {
 				
-		finally {
-
-			insertAuthor.close();
-			insertWrittenby.close();
+			}
+			
+			try {
+				connection.setAutoCommit(false);
+				
+				insertWrittenby = connection.prepareStatement(sqlInsertWrittenby);
+				insertWrittenby.setString(1, isbn);
+				insertWrittenby.setString(2, author.getName());
+				insertWrittenby.setDate(3, java.sql.Date.valueOf(author.getDob()));
+				if (insertWrittenby.executeUpdate()==0) {
+					return false;
+				}
+	
+				else {
+					connection.commit();
+					return true;
+				}
+			}
+					
+			finally {
+	
+				insertAuthor.close();
+				insertWrittenby.close();
+			}
 		}
+		else return false;
 	}
 
 	@Override
@@ -330,35 +350,37 @@ public class MockBooksDb implements BooksDbInterface {
 		String sqlDeleteFromWrittenby = "delete from t_writtenby where isbn = ? ";
 		String sqlLookForISBN = "select isbn from t_book where isbn = ?";
 		
+		if (connection != null) {
 		lookForIsbn = connection.prepareStatement(sqlLookForISBN);
 		lookForIsbn.setString(1, ISBN);
 		resultSet = lookForIsbn.executeQuery();
 		
 		if (resultSet.isBeforeFirst()) {
-			try {
-				connection.setAutoCommit(false);
-				
-				deleteBook = connection.prepareStatement(sqlDeleteBook);
-				deleteBook.setString(1, ISBN);
-				deleteBook.executeUpdate();
-				
-				deleteFromWrittenby = connection.prepareStatement(sqlDeleteFromWrittenby);
-				deleteFromWrittenby.setString(1, ISBN);
-				deleteFromWrittenby.executeUpdate();
-				
-				connection.commit();
-			}
-			catch (Exception e){
-				if (connection != null)
-					connection.rollback();
-			}
-			finally {
-				if (deleteBook != null) {
+				try {
+					connection.setAutoCommit(false);
 					
+					deleteBook = connection.prepareStatement(sqlDeleteBook);
+					deleteBook.setString(1, ISBN);
+					deleteBook.executeUpdate();
+					
+					deleteFromWrittenby = connection.prepareStatement(sqlDeleteFromWrittenby);
+					deleteFromWrittenby.setString(1, ISBN);
+					deleteFromWrittenby.executeUpdate();
+					
+					connection.commit();
 				}
-				connection.setAutoCommit(true);
+				catch (Exception e){
+					if (connection != null)
+						connection.rollback();
+				}
+				finally {
+					if (deleteBook != null) {
+						
+					}
+					connection.setAutoCommit(true);
+				}
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
@@ -366,14 +388,16 @@ public class MockBooksDb implements BooksDbInterface {
 	@Override
 	public List<Book> getBooks() throws SQLException {		
 		List<Book> list = new ArrayList<>();
-
-		resultSet = statement.executeQuery(" select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob"
-				+ " from t_writtenby, t_author, t_book "
-				+ " where t_writtenby.name = t_author.name AND t_writtenby.dob = t_author.dob AND t_book.isbn = t_writtenby.isbn");
-		
-		list = copyBooksToList(resultSet);
-		list = fixList(list);
-		list = fixList2(list);
+		if (connection != null) {
+			resultSet = statement.executeQuery(" select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob"
+					+ " from t_writtenby, t_author, t_book "
+					+ " where t_writtenby.name = t_author.name AND t_writtenby.dob = t_author.dob AND t_book.isbn = t_writtenby.isbn");
+			if (resultSet!=null) {
+				list = copyBooksToList(resultSet);
+				list = fixList(list);
+				list = fixList2(list);
+			}
+		}
 		return list;
 	}	
 	
@@ -412,6 +436,44 @@ public class MockBooksDb implements BooksDbInterface {
 	}
 	
 	
+	private List<Book> addAuthorsSearch(List<Book> books) {    	
+    	List<Book> allBooks = new ArrayList<>();
+
+		try {
+			resultSet = statement.executeQuery(" select t_book.isbn, t_book.title, t_book.genre, t_book.rating, t_author.name, t_author.dob"
+					+ " from t_writtenby, t_author, t_book "
+					+ " where t_writtenby.name = t_author.name AND t_writtenby.dob = t_author.dob AND t_book.isbn = t_writtenby.isbn");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		try {
+			allBooks = copyBooksToList(resultSet);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		allBooks = fixList(allBooks);
+		
+		for (int i=0; i<books.size(); i++) {
+			for (int j=0; j<allBooks.size(); j++) {
+				
+				for (int k=0; k<books.get(i).getAuthors().size(); k++) {
+					for (int m=0; m<allBooks.get(j).getAuthors().size(); m++) {
+						
+						if ((books.get(i).getAuthors().get(k).getName().equals(allBooks.get(j).getAuthors().get(m).getName() )  
+								&& !books.get(i).getIsbn().equals(allBooks.get(j).getIsbn() ))) {
+							
+								books.get(i).getAuthors().get(k).addIsbn(allBooks.get(j).getIsbn());
+						}
+					}
+				}
+			}
+		}
+		
+		return books;
+	}
 	/**
 	 * Places authors of the same book in a single row, removes extra book
 	 * @param books
@@ -443,6 +505,7 @@ public class MockBooksDb implements BooksDbInterface {
 
 				for (int k=0; k<books.get(i).getAuthors().size(); k++) {
 					for (int m=0; m<books.get(j+1).getAuthors().size(); m++) {
+						
 						if (books.get(i).getAuthors().get(k).getName().equals(books.get(j+1).getAuthors().get(m).getName())
 								&& books.get(i).getAuthors().get(k).getDob().equals(books.get(j+1).getAuthors().get(m).getDob())) {
 								books.get(j+1).getAuthors().get(m).addIsbn(books.get(i).getIsbn());
@@ -452,7 +515,6 @@ public class MockBooksDb implements BooksDbInterface {
 				}
 			}
 		}
-		
 		return books;
 	}
 }
