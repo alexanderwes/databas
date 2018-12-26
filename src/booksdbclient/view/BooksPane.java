@@ -4,17 +4,12 @@ import booksdbclient.model.Author;
 import booksdbclient.model.Book;
 import booksdbclient.model.Genre;
 import booksdbclient.model.MockBooksDb;
-import java.sql.Date;
-import java.time.LocalDate;
 import java.util.List;
-
-import com.mysql.cj.util.StringUtils;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;

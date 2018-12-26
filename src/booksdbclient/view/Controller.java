@@ -106,7 +106,7 @@ public class Controller {
     	
     }
 
-    protected void disconnectFromDb() {
+   protected void disconnectFromDb() {
     	new Thread() {
     		public void run() {
     			try {
@@ -117,9 +117,15 @@ public class Controller {
     						}
     					});
     				} else {
+    					
     					javafx.application.Platform.runLater(new Runnable() {
     						public void run() {
-    							booksView.showAlertAndWait("Error", AlertType.ERROR);
+    							try {
+    								booksView.showAlertAndWait("Error", AlertType.ERROR);
+    							}
+    							catch (Exception e){
+    								
+    							}
     						}
     					});
     				}

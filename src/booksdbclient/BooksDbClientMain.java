@@ -36,7 +36,9 @@ public class BooksDbClientMain extends Application {
             try {
                 booksDb.disconnect();
                 primaryStage.close();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            	
+            }
         });
         primaryStage.setScene(scene);
         primaryStage.show();
