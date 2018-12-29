@@ -161,29 +161,38 @@ public class Controller {
 
     protected void addbook(String title, String name, int year, int month, int day, String isbn, Genre genre, int rating) {
  
-        if (!title.trim().isEmpty() && !isbn.trim().isEmpty() && !name.trim().isEmpty() && year != 0 && month !=0 && day !=0) {
+        if (!title.trim().isEmpty() && !isbn.trim().isEmpty() && !name.trim().isEmpty()
+        		&& year != 0 && month !=0 && day !=0) {
             Book book = new Book(isbn, title, genre, rating);
             book.addAuthor(new Author(name, LocalDate.of(year, month, day)));
-           
+            
             new Thread() {
             	public void run() {
             		try {
-            			booksDb.insertBook(book);  
-                    } catch (SQLException ex) {
-                    	Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-            		
-            		javafx.application.Platform.runLater(new Runnable() {
-            			public void run() {
-            				booksView.showAlertAndWait("Book has been added", INFORMATION);
+            			if (booksDb.insertBook(book)) {
+            				javafx.application.Platform.runLater(new Runnable() {
+            					public void run() {
+            						booksView.showAlertAndWait("Book has been added", INFORMATION);
+            					}
+            				});
             			}
-            		});
+            			
+            			else {
+        					javafx.application.Platform.runLater(new Runnable() {
+        						public void run() {
+        							booksView.showAlertAndWait("Book already exists or not connected to DB", ERROR);
+        						}
+        					});
+        				}
+            		} catch (SQLException ex){
+            			Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+            		}
             	}
             }.start();
-          
-        } else {
-            booksView.showAlertAndWait("You need to provide sufficient information!", ERROR);
-        }
+            
+        	} else {
+            	booksView.showAlertAndWait("You need to provide sufficient information!", ERROR);
+            }
     }
 
     protected void removeBook(String isbn) {

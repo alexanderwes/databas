@@ -203,7 +203,7 @@ public class MockBooksDb implements BooksDbInterface {
 	}
 
 	@Override
-	public void insertBook(Book book) throws SQLException {
+	public boolean insertBook(Book book) throws SQLException {
 		if (connection != null) {
 			PreparedStatement insertBook = null;
 			PreparedStatement insertAuthor = null;
@@ -234,7 +234,6 @@ public class MockBooksDb implements BooksDbInterface {
 				
 			}
 			
-			
 			try {
 				connection.setAutoCommit(false);
 				insertBook = connection.prepareStatement(sqlInsertBook);
@@ -257,8 +256,10 @@ public class MockBooksDb implements BooksDbInterface {
 			}
 			
 			catch (Exception e){
-				if (connection != null)
+				if (connection != null) {
 					connection.rollback();
+					return false;
+				}
 			}
 			
 			finally {
@@ -267,7 +268,9 @@ public class MockBooksDb implements BooksDbInterface {
 				}
 				connection.setAutoCommit(true);
 			}
+			return true;
 		}
+		return false;
 	}
 
 	@Override
@@ -426,17 +429,17 @@ public class MockBooksDb implements BooksDbInterface {
 		}
 	}
 	
-	public List<Author> getAuthors() throws SQLException {
-		String sqlGetAllAuthors = "select * from t_author";
-		Author author;
-		List<Author> list = new ArrayList<>();
-		resultSet = statement.executeQuery(sqlGetAllAuthors);
-		while (resultSet.next()) {
-			author = new Author(resultSet.getString(1), resultSet.getDate(2).toLocalDate());
-			list.add(author);
-		}
-		return list;
-	}
+//	private List<Author> getAuthors() throws SQLException {
+//		String sqlGetAllAuthors = "select * from t_author";
+//		Author author;
+//		List<Author> list = new ArrayList<>();
+//		resultSet = statement.executeQuery(sqlGetAllAuthors);
+//		while (resultSet.next()) {
+//			author = new Author(resultSet.getString(1), resultSet.getDate(2).toLocalDate());
+//			list.add(author);
+//		}
+//		return list;
+//	}
 	
 	
 	private List<Book> addAuthorsSearch(List<Book> books) {    	
@@ -520,9 +523,6 @@ public class MockBooksDb implements BooksDbInterface {
 		}
 		return books;
 	}
-	
-	
-	
 }
 
 

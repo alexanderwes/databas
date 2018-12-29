@@ -77,7 +77,7 @@ public interface BooksDbInterface {
      * @param rating
      * @throws SQLException
      */
-    public void insertBook(Book book) throws SQLException;
+    public boolean insertBook(Book book) throws SQLException;
     /**
      * Updating an existing book's rating
      * @param book
